@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kantor Virtual 3D</title>
+<link rel="stylesheet" href="style.css">
+<script type="importmap">
+{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js" } }
+</script>
+</head>
+<body>
+<div id="scene"></div>
+
+<aside id="sidebar" aria-label="Pengguna online">
+  <h2>Online <span id="userCount">0</span></h2>
+  <ul id="userList"></ul>
+</aside>
+
+<div id="topbar">
+  <button id="boardBtn" type="button">Papan Task</button>
+  <button id="voiceBtn" type="button" aria-pressed="false" title="Aktifkan mikrofon dan audio spasial">Aktifkan mikrofon</button>
+  <button id="editBtn" type="button" title="Mode Edit Penempatan Furnitur (Hanya Admin)">🛠️ Mode Edit</button>
+  <button id="adminPanelToggle" type="button" title="Panel Kontrol Admin">⚙️ Admin</button>
+</div>
+
+<!-- Floating Admin Control Panel -->
+<div id="adminControlPanel" class="hidden" aria-label="Panel Kontrol Admin">
+  <div class="admin-panel-header">
+    <span class="admin-panel-badge">⚙️ KONTROL ADMIN</span>
+    <button id="closeAdminPanelBtn" type="button" class="admin-panel-close" title="Tutup panel">✕</button>
+  </div>
+  <div class="admin-panel-actions">
+    <button id="muteAllBtn" type="button" class="admin-ctrl-btn" title="Matikan mikrofon semua peserta">🔇 Mute Semua</button>
+    <button id="lockRoomBtn" type="button" class="admin-ctrl-btn" title="Kunci/buka ruangan">🔒 Kunci Ruangan</button>
+    <button id="disableVoiceBtn" type="button" class="admin-ctrl-btn" title="Nonaktifkan/aktifkan voice chat">🚫 Nonaktifkan Voice</button>
+    <button id="kickAllBtn" type="button" class="admin-ctrl-btn btn-danger" title="Keluarkan semua peserta">👢 Kick Semua</button>
+  </div>
+</div>
+
+<!-- Floating Editor Toolbar saat Mode Edit aktif -->
+<div id="editorBar" class="hidden" aria-label="Toolbar Mode Edit">
+  <div class="editor-header">
+    <span class="editor-badge">🛠️ MODE EDIT AKTIF</span>
+    <span id="selectedItemLabel" class="selected-label">Pilih furnitur di ruangan untuk menggeser</span>
+  </div>
+  <div class="editor-actions">
+    <button id="addFurnBtn" type="button" class="btn-primary">➕ Tambah Furnitur</button>
+    <button id="rotateFurnBtn" type="button" disabled title="Putar 45° (R)">🔄 Putar</button>
+    <button id="dupFurnBtn" type="button" disabled title="Duplikat furnitur terpilih">📋 Duplikat</button>
+    <button id="delFurnBtn" type="button" class="btn-danger" disabled title="Hapus furnitur (Del)">🗑️ Hapus</button>
+    <button id="resetFurnBtn" type="button" class="btn-outline" title="Kembalikan tata letak default">🔁 Reset</button>
+    <button id="closeEditBtn" type="button" class="btn-success">✅ Selesai</button>
+  </div>
+</div>
+
+<div id="hint">Drag putar kamera &middot; WASD jalan &middot; Space lompat &middot; E gunakan objek &middot; scroll zoom</div>
+<div id="interactionPrompt" class="hidden" aria-live="polite"></div>
+
+<section id="chatPanel" aria-label="Obrolan">
+  <ul id="chatList"></ul>
+  <input id="chatInput" maxlength="500" placeholder="Tulis pesan... (Enter untuk kirim)" autocomplete="off">
+</section>
+
+<div id="joinOverlay">
+  <div class="card">
+    <h1>Kantor Virtual 3D</h1>
+    <p id="joinInfo">Masukkan nama untuk masuk ke ruangan bersama tim.</p>
+    <input id="nameInput" maxlength="20" placeholder="Nama kamu" autocomplete="off">
+    <button id="joinBtn" type="button">Masuk</button>
+  </div>
+</div>
+
+<!-- Modal Login Admin -->
+<div id="adminModal" class="hidden" role="dialog" aria-label="Akses Admin">
+  <div class="card">
+    <h2>Akses Mode Edit Admin</h2>
+    <p>Masukkan kata sandi admin atau kode undangan admin untuk mengedit ruangan.</p>
+    <input id="adminKeyInput" type="password" placeholder="Kata sandi admin (default: admin123)" autocomplete="current-password">
+    <div class="modal-buttons">
+      <button id="adminLoginBtn" type="button" class="btn-primary">Buka Mode Edit</button>
+      <button id="adminCloseBtn" type="button" class="btn-outline">Batal</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Katalog Furnitur -->
+<div id="catalogModal" class="hidden" role="dialog" aria-label="Katalog Furnitur">
+  <div class="catalog-box">
+    <div class="catalog-header">
+      <h2>Katalog Furnitur</h2>
+      <button id="catalogCloseBtn" type="button">Tutup</button>
+    </div>
+    <div class="catalog-content" id="catalogList"></div>
+  </div>
+</div>
+
+<div id="reconnectOverlay" class="hidden">
+  <div class="card"><p>Terputus &mdash; mencoba menyambung lagi&hellip;</p></div>
+</div>
+
+<div id="kanbanModal" class="hidden" role="dialog" aria-label="Papan Task">
+  <div class="kanban">
+    <div class="kanban-head">
+      <h2>Papan Task</h2>
+      <button id="kanbanClose" type="button">Tutup</button>
+    </div>
+    <div class="cols" id="kanbanCols"></div>
+  </div>
+</div>
+
+<div id="toasts" aria-live="polite"></div>
+
+<script type="module" src="client.js"></script>
+</body>
+</html>

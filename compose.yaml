@@ -1,0 +1,33 @@
+# Kantor Virtual 3D — dijalankan/dihentikan dari dashboard Pusat Kendali AI
+# (http://127.0.0.1:8080/lokal). Bisa juga manual: docker compose up -d --build
+#
+# Port 8095 (8080 = dashboard, 8090 = book-studio). Bisa diganti: KANTOR_PORT=xxxx di .env
+# Akses Wi-Fi diatur dari tombol "Wi-Fi" di halaman Proyek lokal dashboard
+# (menulis LAN_BIND di .env: 127.0.0.1 = hanya laptop ini, 0.0.0.0 = perangkat lain di Wi-Fi).
+# Hanya pemegang link undangan yang bisa masuk; kelola di /admin.html
+# (kode admin ada di Log proyek / data/undangan.json).
+name: kantor-virtual-3d
+
+services:
+  kantor:
+    build: .
+    restart: unless-stopped
+    environment:
+      TZ: Asia/Jakarta
+      PORT: "8095"                       # port di dalam kontainer (port luar = KANTOR_PORT)
+      TASKS_FILE: /app/data/tasks.json
+      FURNITURE_FILE: /app/data/furniture.json   # tata letak tidak hilang saat kontainer dibuat ulang
+      TURN_SECRET: ${TURN_SECRET:-}      # sama dengan coturn di macOS (jalankan-turn.sh)
+    volumes:
+      - ./data:/app/data                 # tasks, furnitur, undangan, sertifikat HTTPS
+      # Kode dipasang langsung dari folder: ubah server.js / public/ lalu cukup klik Restart di dashboard.
+      - ./server.js:/app/server.js:ro
+      - ./public:/app/public:ro
+    ports:
+      - "${LAN_BIND:-127.0.0.1}:${KANTOR_PORT:-8095}:8095"
+    stop_grace_period: 5s
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8095/health >/dev/null || wget -qO- --no-check-certificate https://127.0.0.1:8095/health >/dev/null || exit 1"]
+      interval: 30s
+      timeout: 3s
+      retries: 3

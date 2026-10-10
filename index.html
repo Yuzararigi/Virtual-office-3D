@@ -1,0 +1,500 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kantor Virtual 3D</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{
+    background:#f6ecdc;
+    padding:26px;
+    font-family:'Plus Jakarta Sans',system-ui,-apple-system,'Segoe UI',sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  #app{
+    width:1180px;height:730px;display:flex;border-radius:22px;overflow:hidden;
+    background:#fbf4e8;position:relative;
+    box-shadow:0 34px 70px -34px rgba(74,48,18,.55), 0 0 0 1px rgba(120,90,50,.10);
+  }
+  /* ---------- sidebar ---------- */
+  #sidebar{width:300px;flex:0 0 300px;background:#16161b;color:#e9e5dc;display:flex;flex-direction:column}
+  #sbHead{padding:22px 20px 12px}
+  #sbHead h1{margin:0;font-size:18px;font-weight:800;letter-spacing:-.3px}
+  #sbHead .sub{margin-top:7px;font-size:11.5px;color:#8f8b83;display:flex;align-items:center;gap:7px}
+  #sbHead .sub b{color:#eae6de;font-weight:700}
+  #sbHead .badge{margin-left:auto;font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;
+    color:#4fd08d;background:rgba(53,192,122,.13);padding:3px 7px;border-radius:20px;font-weight:700}
+  #people{flex:1;overflow-y:auto;padding:6px 12px 14px;display:flex;flex-direction:column;gap:2px}
+  #people::-webkit-scrollbar{width:8px}
+  #people::-webkit-scrollbar-thumb{background:#2c2c36;border-radius:8px;border:2px solid #16161b}
+  .person{display:grid;grid-template-columns:34px 1fr auto;align-items:center;gap:10px;padding:8px 10px;
+    border-radius:12px;cursor:pointer;border:1px solid transparent;transition:background .15s,border-color .15s;text-align:left;background:none;font:inherit;color:inherit}
+  .person:hover{background:#20202a}
+  .person.active{background:#23232e;border-color:#35353f}
+  .av{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;font-size:13px;font-weight:800;color:#14141c}
+  .nm{font-size:12.8px;font-weight:600;color:#efebe3;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .rl{font-size:10.5px;color:#8b877f;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .st{display:flex;align-items:center;gap:5px;font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:#736f68;font-weight:700}
+  .st i{width:6px;height:6px;border-radius:50%;background:#5d5b58;display:block;flex:0 0 6px}
+  .person.working .st{color:#4fd08d}
+  .person.working .st i{background:#35c07a;box-shadow:0 0 0 3px rgba(53,192,122,.16)}
+  #sbFoot{padding:12px 20px 16px;border-top:1px solid #24242c;font-size:10.5px;color:#6f6b64;line-height:1.55}
+  #sbFoot b{color:#8f8b83;font-weight:600}
+  /* ---------- stage ---------- */
+  #stage{flex:1;position:relative;background:radial-gradient(120% 95% at 52% -8%,#fefaf1 0%,#f6e9d6 55%,#eddbc0 100%);overflow:hidden}
+  #stage:after{content:"";position:absolute;inset:0;pointer-events:none;
+    background:radial-gradient(120% 95% at 52% -8%,transparent 55%,rgba(140,105,60,.13) 100%)}
+  svg#scene{width:100%;height:100%;display:block;cursor:grab;touch-action:none;user-select:none}
+  svg#scene.grabbing{cursor:grabbing}
+  #hud{position:absolute;top:14px;right:14px;display:flex;align-items:center;gap:7px;z-index:5}
+  .btn{background:rgba(255,255,255,.8);border:1px solid #e6d7c1;border-radius:10px;padding:7px 11px;
+    font:700 11.5px/1 'Plus Jakarta Sans',system-ui,sans-serif;color:#5a4f40;cursor:pointer;
+    transition:background .15s,color .15s,border-color .15s}
+  .btn:hover{background:#fff;border-color:#d9c3a3}
+  .btn.on{background:#35b87a;border-color:#35b87a;color:#fff}
+  .chip{background:rgba(255,255,255,.72);border:1px solid #e6d7c1;border-radius:10px;padding:7px 10px;
+    font:700 11px/1 'Plus Jakarta Sans',system-ui,sans-serif;color:#7d7261;letter-spacing:.03em}
+  #footer{position:absolute;left:16px;bottom:14px;z-index:5;display:flex;align-items:center;gap:9px;
+    font-size:11px;color:#7e7362;font-weight:600}
+  #footer .sep{width:3px;height:3px;border-radius:50%;background:#c2b19a}
+  #legend{position:absolute;left:16px;top:14px;z-index:5;display:flex;gap:14px;font-size:10.5px;color:#8a7c66;font-weight:600}
+  #legend span{display:flex;align-items:center;gap:6px}
+  #legend i{width:7px;height:7px;border-radius:50%;display:block}
+  /* ---------- scene actors ---------- */
+  .actor{transition:transform .35s cubic-bezier(.3,.8,.3,1)}
+  .actor .bob{animation:bob 2.6s ease-in-out infinite}
+  @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-2.4px)}}
+  .actor .ring{animation:ringPulse 2.4s ease-out infinite}
+  @keyframes ringPulse{0%{transform:scale(.85);opacity:.8}70%{transform:scale(1.9);opacity:0}100%{opacity:0}}
+  .actor.focus .halo{opacity:1}
+  .halo{opacity:0;transition:opacity .25s}
+  @media (prefers-reduced-motion: reduce){ .actor .bob,.actor .ring{animation:none} }
+</style>
+</head>
+<body>
+<div id="app">
+  <aside id="sidebar">
+    <div id="sbHead">
+      <h1>Kantor Virtual 3D</h1>
+      <div class="sub"><b>Our people</b> 12 <span class="badge">2 working</span></div>
+    </div>
+    <div id="people"></div>
+    <div id="sbFoot"><b>Klik nama</b> untuk fokus ke orangnya di ruangan.<br>Drag = putar · scroll = zoom · shift+drag = geser.</div>
+  </aside>
+
+  <main id="stage">
+    <svg id="scene" viewBox="-720 -580 1440 1040" preserveAspectRatio="xMidYMid meet">
+      <g id="cam">
+        <g id="ground"></g>
+        <g id="world"></g>
+        <g id="labels"></g>
+        <g id="actors"></g>
+      </g>
+    </svg>
+
+    <div id="legend">
+      <span><i style="background:#35c07a"></i>Working</span>
+      <span><i style="background:#9a938a"></i>Idle</span>
+    </div>
+
+    <div id="hud">
+      <button class="btn" id="bAuto">Putar otomatis</button>
+      <button class="btn" id="bBoard">Papan Task</button>
+      <button class="btn" id="bOut">−</button>
+      <button class="btn" id="bIn">+</button>
+      <button class="btn" id="bReset">Reset</button>
+      <span class="chip" id="rotOut">0°</span>
+    </div>
+
+    <div id="footer">
+      <span>12 karyawan</span><span class="sep"></span>
+      <span>drag &amp; putar</span><span class="sep"></span>
+      <span>scroll &amp; zoom</span><span class="sep"></span>
+      <span>shift+drag &amp; geser</span>
+    </div>
+  </main>
+</div>
+
+<script>
+/* ============================================================
+   KANTOR VIRTUAL 3D — isometric scene, dihitung ulang tiap rotasi
+   ============================================================ */
+const DEG = Math.PI/180, IX = Math.cos(30*DEG), IY = 0.5;
+const CX = 450, CY = 320;            // pusat rotasi ruangan (koordinat dunia)
+let rot = 0, zoomK = 1, pan = {x:0, y:0};
+
+function proj(x, y, z){
+  const r = rot*DEG, c = Math.cos(r), s = Math.sin(r);
+  const dx = x-CX, dy = y-CY;
+  const rx = dx*c - dy*s, ry = dx*s + dy*c;
+  return { x:(rx-ry)*IX, y:(rx+ry)*IY - (z||0), k:rx+ry };
+}
+function vis(nx, ny, nz){                 // apakah sisi menghadap kamera
+  const r = rot*DEG, c = Math.cos(r), s = Math.sin(r);
+  return (nx*c - ny*s) + (nx*s + ny*c) + nz > 0.0001;
+}
+/* warna */
+function hx(h){ h=h.replace('#',''); if(h.length===3) h=h.split('').map(c=>c+c).join('');
+  return [parseInt(h.slice(0,2),16),parseInt(h.slice(2,4),16),parseInt(h.slice(4,6),16)]; }
+function mix(h,t,a){ const c=hx(h); return 'rgb('+c.map((v,i)=>Math.round(v+(t[i]-v)*a)).join(',')+')'; }
+const lighten=(h,a)=>mix(h,[255,255,255],a);
+const darken =(h,a)=>mix(h,[40,29,18],a);
+function rgba(h,a){ const c=hx(h); return 'rgba('+c[0]+','+c[1]+','+c[2]+','+a+')'; }
+const ptsStr = ps => ps.map(p=>p.x.toFixed(1)+','+p.y.toFixed(1)).join(' ');
+
+/* ============================================================
+   PENGUMPUL GEOMETRI
+   ============================================================ */
+let items = [], groundItems = [];
+const add = (html, depth) => items.push({html, depth});
+
+/* kotak (balok) axis-aligned — hanya 3 sisi yang terlihat yang digambar */
+function box(x, y, z, w, d, h, c, opt){
+  opt = opt || {};
+  const P = [[x,y,z],[x+w,y,z],[x+w,y+d,z],[x,y+d,z],
+             [x,y,z+h],[x+w,y,z+h],[x+w,y+d,z+h],[x,y+d,z+h]].map(a=>proj(a[0],a[1],a[2]));
+  const faces = [
+    {n:[0,0,1],  i:[4,5,6,7], f:lighten(c,.24), s:darken(c,.30)},
+    {n:[1,0,0],  i:[1,2,6,5], f:c,              s:darken(c,.26)},
+    {n:[0,1,0],  i:[3,2,6,7], f:darken(c,.16),  s:darken(c,.34)},
+    {n:[-1,0,0], i:[0,3,7,4], f:darken(c,.30),  s:darken(c,.38)},
+    {n:[0,-1,0], i:[0,1,5,4], f:darken(c,.26),  s:darken(c,.38)},
+    {n:[0,0,-1], i:[0,1,2,3], f:darken(c,.42),  s:darken(c,.42)}
+  ];
+  let s = '';
+  for(const f of faces){
+    if(opt.noTop && f.n[2]===1) continue;
+    if(!vis(f.n[0],f.n[1],f.n[2])) continue;
+    s += '<polygon points="'+ptsStr(f.i.map(i=>P[i]))+'" fill="'+f.f+'" stroke="'+f.s+'" stroke-width="0.7" stroke-linejoin="round"/>';
+  }
+  add(s, proj(x+w/2, y+d/2, 0).k + z*0.02);
+}
+/* poligon datar di lantai (digambar paling bawah) */
+function ground(pts, fill, stroke, z, op){
+  const p = pts.map(a=>proj(a[0],a[1], z===undefined?0.6:z));
+  groundItems.push('<polygon points="'+ptsStr(p)+'" fill="'+fill+'" stroke="'+(stroke||'none')+'" stroke-width="1" opacity="'+(op===undefined?1:op)+'"/>');
+}
+/* bidang bersudut (papan, layar) memakai matriks affine dari proyeksi.
+   lw/lh = ukuran ruang lokal konten (default 1 unit lokal) */
+function plane(o, u, v, html, normal, lw, lh){
+  if(normal && !vis(normal[0],normal[1],normal[2])) return;
+  const P0=proj(o.x,o.y,o.z), PU=proj(o.x+u.x,o.y+u.y,o.z+u.z), PV=proj(o.x+v.x,o.y+v.y,o.z+v.z);
+  const sx = lw||1, sy = lh||1;
+  const m='matrix('+((PU.x-P0.x)/sx).toFixed(4)+','+((PU.y-P0.y)/sx).toFixed(4)+','+
+          ((PV.x-P0.x)/sy).toFixed(4)+','+((PV.y-P0.y)/sy).toFixed(4)+','+
+          P0.x.toFixed(2)+','+P0.y.toFixed(2)+')';
+  add('<g transform="'+m+'">'+html+'</g>', proj(o.x+ (u.x||0)/2, o.y + (u.y||0)/2, 0).k + 3);
+}
+
+/* ============================================================
+   ORANG
+   ============================================================ */
+const SKIN = ['#e8b48f','#d59a6e','#c98b60','#f0c3a0','#b57c52','#a9714b'];
+const people = [
+  {n:'Sundar Pichai',     r:'Koordinator',      s:'working', x:260, y:340, c:'#4a7fe0', av:'#8fbaff'},
+  {n:'Shantanu Narayen',  r:'Frontend',         s:'idle',    x:300, y:430, c:'#4ec3c9', av:'#93e2e6'},
+  {n:'Raj Vikramaditya',  r:'Scriptwriter',     s:'idle',    x:470, y:470, c:'#ef7a9a', av:'#ffaec2'},
+  {n:'Sunita Sarawagi',   r:'DevOps',           s:'working', x:670, y:450, c:'#35b87a', av:'#8ce0b5'},
+  {n:'Satya Nadella',     r:'Backend',          s:'idle',    x:560, y:300, c:'#e2725b', av:'#f7ab98'},
+  {n:'Vinod Khosla',      r:'Trend Researcher', s:'idle',    x:670, y:250, c:'#b57edc', av:'#d3aeea'},
+  {n:'Abhinav Asthana',   r:'Publisher',        s:'idle',    x:760, y:260, c:'#e8912f', av:'#ffc178'},
+  {n:'Sanjay Ghemawat',   r:'Video Editor',     s:'idle',    x:820, y:250, c:'#6fbf8b', av:'#a5e3bd'},
+  {n:'Ruchi Sanghvi',     r:'Uploader',         s:'idle',    x:150, y:560, c:'#f2b544', av:'#ffdc93'},
+  {n:'Kriti Sharma',      r:'SEO',              s:'idle',    x:330, y:550, c:'#8aa9e0', av:'#bccdf3'},
+  {n:'Neha Narkhede',     r:'Netizen',          s:'idle',    x:420, y:560, c:'#d98b6a', av:'#f0baa0'},
+  {n:'Pooja Sankar',      r:'Arsip',            s:'idle',    x:560, y:560, c:'#a9b7c6', av:'#ccd7e1'}
+];
+
+/* ============================================================
+   ISI RUANGAN (koordinat dunia: 0..900 x, 0..640 y, z ke atas)
+   ============================================================ */
+const WOOD='#dcbb8b', WOOD_D='#c9a473', PINK='#f0a2b6', PINK_D='#dd8fa5';
+const BOOKS=['#e2725b','#5b8def','#f2b544','#6fbf8b','#b57edc','#ef7a9a','#4ec3c9','#e8912f'];
+
+function desk(x, y, shirt){
+  box(x, y, 0, 8, 8, 62, WOOD_D);                    // kaki
+  box(x+152, y, 0, 8, 8, 62, WOOD_D);
+  box(x, y+62, 0, 8, 8, 62, WOOD_D);
+  box(x+152, y+62, 0, 8, 8, 62, WOOD_D);
+  box(x, y, 62, 160, 70, 9, WOOD);                   // daun meja
+  box(x+50, y+7, 71, 58, 9, 38, '#33323a');          // monitor
+  plane({x:x+55,y:y+16.5,z:99},{x:48,y:0,z:0},{x:0,y:0,z:-30},
+        '<rect x="0" y="0" width="48" height="30" rx="2" fill="#42506b"/>'+
+        '<rect x="4" y="4" width="26" height="4" rx="2" fill="#6d82ad"/>'+
+        '<rect x="4" y="12" width="34" height="3" rx="1.5" fill="#5b6f99"/>'+
+        '<rect x="4" y="19" width="20" height="3" rx="1.5" fill="#5b6f99"/>', [0,1,0], 48, 30);
+  box(x+22, y+46, 71, 72, 24, 4, '#e3ddd1');         // keyboard
+  box(x+124, y+42, 71, 15, 15, 17, shirt||'#e2725b');// mug
+}
+function chair(x, y){
+  box(x+14, y+14, 0, 10, 10, 30, darken(PINK_D,.1));
+  box(x, y, 30, 38, 38, 10, PINK);
+  box(x, y+31, 40, 38, 7, 30, PINK_D);
+}
+function shadowOf(x, y, w, d, a){
+  ground([[x+9,y+9],[x+w+9,y+9],[x+w+9,y+d+9],[x+9,y+d+9]], rgba('#4a3012', a||0.1), 'none', 0.5);
+}
+
+function buildScene(){
+  items = []; groundItems = []; labelDefs = [];
+
+  /* ---------- lantai & platform ---------- */
+  ground([[0,0],[900,0],[900,640],[0,640]], '#f2e3c9', '#dcc39a', 0.15);
+  for(let y=53; y<640; y+=53){
+    const a=proj(0,y,0.2), b=proj(900,y,0.2);
+    groundItems.push('<line x1="'+a.x.toFixed(1)+'" y1="'+a.y.toFixed(1)+'" x2="'+b.x.toFixed(1)+'" y2="'+b.y.toFixed(1)+'" stroke="#e7d3b0" stroke-width="1.3"/>');
+  }
+  for(let x=120; x<900; x+=120){
+    const a=proj(x,0,0.2), b=proj(x,640,0.2);
+    groundItems.push('<line x1="'+a.x.toFixed(1)+'" y1="'+a.y.toFixed(1)+'" x2="'+b.x.toFixed(1)+'" y2="'+b.y.toFixed(1)+'" stroke="#e9d7b6" stroke-width="1.1"/>');
+  }
+  box(-10,-10,-20, 920, 660, 20, '#cfae7f', {noTop:true});
+  /* border lantai tipis (tanpa dinding tinggi supaya tidak memotong pandangan) */
+  ground([[0,0],[900,0],[900,640],[0,640]], 'none', '#e0c8a2', 1.1);
+
+  /* ---------- karpet lounge ---------- */
+  ground([[150,445],[345,445],[345,615],[150,615]], '#f4dac7', '#e2bda4', 0.9);
+  ground([[166,461],[329,461],[329,599],[166,599]], 'none', '#eccdb8', 1);
+
+  /* ---------- PAPAN TASK ---------- */
+  shadowOf(150,55,460,14,.12);
+  box(150,55,0, 460,14,230, '#3f3e48');
+  plane({x:163,y:70,z:217},{x:434,y:0,z:0},{x:0,y:0,z:-203}, boardHTML(), [0,1,0], 434, 203);
+
+  /* ---------- PERPUSTAKAAN ---------- */
+  shadowOf(55,140,40,300,.1);
+  box(55,140,0, 40,300,148, WOOD_D);
+  box(58,145,42, 34,290,6, WOOD);
+  box(58,145,90, 34,290,6, WOOD);
+  box(58,145,138, 34,290,6, WOOD);
+  for(let s=0;s<3;s++){
+    for(let i=0;i<10;i++){
+      const y = 150 + i*29;
+      const h = 30 + ((i*7+s*5)%11);
+      box(62, y, 3+s*47, 24, 20, h, BOOKS[(i+s*3)%BOOKS.length]);
+    }
+  }
+
+  /* ---------- RUANG MEETING ---------- */
+  shadowOf(650,290,160,100,.1);
+  box(650,290,52, 160,100,10, WOOD);
+  box(660,300,0, 12,12,52, WOOD_D);
+  box(788,300,0, 12,12,52, WOOD_D);
+  box(660,368,0, 12,12,52, WOOD_D);
+  box(788,368,0, 12,12,52, WOOD_D);
+  chair(600,318); chair(822,318); chair(700,240); chair(700,404);
+  box(690,318,62, 60,42,3, '#eae4d8');
+  box(700,326,65, 40,26,3, '#2f2e34');
+
+  /* ---------- DESK KERJA ---------- */
+  shadowOf(180,250,160,70); chair(200,345);   desk(180,250,'#e2725b');
+  shadowOf(390,370,160,70); chair(410,470);   desk(390,370,'#4a7fe0');
+  shadowOf(620,470,160,70); chair(640,570);   desk(620,470,'#6fbf8b');
+
+  /* ---------- LOUNGE ---------- */
+  shadowOf(150,455,190,70,.09);
+  box(150,455,0, 190,70,42, '#8fb7d6');
+  box(150,455,0, 190,16,60, '#7ba6c7');
+  box(152,467,42, 24,46,14, '#a8c9e0');
+  box(314,467,42, 24,46,14, '#a8c9e0');
+  box(230,570,0, 90,50,12, WOOD);
+  box(240,580,12, 20,12,20, '#e2725b');
+
+  /* ---------- TANAMAN & DETAIL ---------- */
+  [[470,140],[846,592]].forEach(([px,py])=>{
+    shadowOf(px,py,40,40,.09);
+    box(px,py,0, 36,36,30, '#d98b6a');
+    box(px+3,py+3,30, 30,30,22, '#5aa877');
+    box(px+9,py+9,52, 18,18,16, '#6fbf8b');
+  });
+  box(60,596,0, 46,44,66, '#dfe4e8');   // dispenser
+  box(66,620,66, 34,10,14, '#9fb3c4');
+
+  /* label ruangan */
+  labelAt(140,270, 90, 'Perpustakaan');
+  labelAt(730,340, 76, 'Ruang Meeting');
+}
+
+/* papan task (koordinat lokal 0..434 x 0..203) */
+function boardHTML(){
+  const cols = [
+    {t:'ANTRI',       c:'#e8912f', cards:['Riset kompetitor Q4','Naskah video #12']},
+    {t:'DIKERJAKAN',  c:'#4a7fe0', cards:['Deploy landing page','Desain banner promo']},
+    {t:'SELESAI',     c:'#35b87a', cards:['Migrasi server','Laporan mingguan']}
+  ];
+  let s = '<rect x="0" y="0" width="434" height="203" rx="10" fill="#fbf7ee" stroke="#ded4c2" stroke-width="1.6"/>'+
+          '<text x="16" y="27" font-size="19" font-weight="800" fill="#3e3a33" letter-spacing="0.4">PAPAN TASK</text>'+
+          '<text x="418" y="26" font-size="12" text-anchor="end" fill="#a89f90">Sprint 14</text>';
+  cols.forEach((col,i)=>{
+    const x = 16 + i*142, y0 = 40, cw = 132, ch = 150;
+    s += '<rect x="'+x+'" y="'+y0+'" width="'+cw+'" height="'+ch+'" rx="8" fill="#f2ece0"/>';
+    s += '<rect x="'+(x+6)+'" y="'+(y0+6)+'" width="'+(cw-12)+'" height="24" rx="6" fill="'+col.c+'"/>';
+    s += '<text x="'+(x+cw/2)+'" y="'+(y0+22)+'" font-size="12.5" font-weight="700" fill="#fff" text-anchor="middle" letter-spacing="0.9">'+col.t+'</text>';
+    col.cards.forEach((t,j)=>{
+      const cy = y0 + 38 + j*50;
+      s += '<rect x="'+(x+6)+'" y="'+cy+'" width="'+(cw-12)+'" height="44" rx="6" fill="#fffdf8" stroke="#e6ddcd"/>';
+      s += '<rect x="'+(x+13)+'" y="'+(cy+9)+'" width="24" height="4" rx="2" fill="'+col.c+'" opacity="0.55"/>';
+      s += '<text x="'+(x+13)+'" y="'+(cy+32)+'" font-size="13.5" fill="#565046">'+t+'</text>';
+    });
+  });
+  return s;
+}
+
+/* label mengambang (screen-space, selalu tegak) */
+let labelDefs = [];
+function labelAt(x, y, lift, text){ labelDefs.push({x,y,lift,text}); }
+
+/* ============================================================
+   DOM
+   ============================================================ */
+const camEl=document.getElementById('cam'), worldEl=document.getElementById('world'),
+      groundEl=document.getElementById('ground'), labelsEl=document.getElementById('labels'),
+      actorsEl=document.getElementById('actors'), svg=document.getElementById('scene'),
+      rotOut=document.getElementById('rotOut'), peopleEl=document.getElementById('people');
+
+/* sidebar */
+function buildSidebar(){
+  peopleEl.innerHTML = people.map((p,i)=>{
+    const ini = p.n.split(' ').map(w=>w[0]).slice(0,2).join('');
+    return '<button class="person '+(p.s==='working'?'working':'')+'" data-i="'+i+'">'+
+      '<span class="av" style="background:'+p.av+'">'+ini+'</span>'+
+      '<span><span class="nm">'+p.n+'</span><span class="rl" style="display:block">'+p.r+'</span></span>'+
+      '<span class="st"><i></i>'+(p.s==='working'?'Working':'Idle')+'</span></button>';
+  }).join('');
+  peopleEl.querySelectorAll('.person').forEach(b=>{
+    b.addEventListener('click', ()=> focusPerson(+b.dataset.i, true));
+  });
+}
+
+/* aktor dibuat sekali supaya animasi CSS tidak restart */
+function buildActors(){
+  actorsEl.innerHTML = people.map((p,i)=>{
+    const skin = SKIN[i%SKIN.length];
+    const hair = ['#2f2b28','#3d3128','#241f1d','#4a3b2f'][i%4];
+    return '<g class="actor" id="actor-'+i+'">'+
+      '<title>'+p.n+' — '+p.r+'</title>'+
+      '<ellipse class="ring" rx="15" ry="6" fill="none" stroke="#35c07a" stroke-width="2" opacity="'+(p.s==='working'?1:0)+'"/>'+
+      '<ellipse class="halo" rx="22" ry="9" fill="none" stroke="#e8912f" stroke-width="2.5" opacity="0"/>'+
+      '<ellipse rx="14" ry="5.5" fill="rgba(60,40,16,.20)"/>'+
+      '<g class="bob">'+
+        '<rect x="-10" y="-42" width="20" height="34" rx="9" fill="'+p.c+'"/>'+
+        '<rect x="-6.5" y="-33" width="13" height="9" rx="4" fill="rgba(255,255,255,.20)"/>'+
+        '<circle cy="-49" r="8.6" fill="'+skin+'"/>'+
+        '<path d="M-8.6 -50.5 a8.6 8.6 0 0 1 17.2 0 q-4.3 -5.4 -8.6 -5.4 q-4.3 0 -8.6 5.4 Z" fill="'+hair+'"/>'+
+      '</g>'+
+      '<circle cx="11" cy="-52" r="4.6" fill="'+(p.s==='working'?'#35c07a':'#b9b2a6')+'" stroke="#fffdf8" stroke-width="1.4"/>'+
+    '</g>';
+  }).join('');
+}
+function placeActors(){
+  people.forEach((p,i)=>{
+    const q = proj(p.x, p.y, 0), el = document.getElementById('actor-'+i);
+    el.setAttribute('transform','translate('+q.x.toFixed(1)+' '+q.y.toFixed(1)+')');
+  });
+}
+function placeLabels(){
+  labelsEl.innerHTML = labelDefs.map(l=>{
+    const q = proj(l.x, l.y, 0), w = l.text.length*6.6 + 22;
+    return '<g transform="translate('+q.x.toFixed(1)+' '+(q.y-l.lift).toFixed(1)+')">'+
+      '<rect x="'+(-w/2)+'" y="-11" width="'+w+'" height="22" rx="11" fill="rgba(255,255,255,.86)" stroke="#e2d3bb"/>'+
+      '<text y="4" text-anchor="middle" font-size="10.5" font-weight="700" fill="#6d6354" letter-spacing="1.1">'+l.text.toUpperCase()+'</text>'+
+      '<path d="M0 11 L0 '+(l.lift*0.34).toFixed(0)+'" stroke="#dccdb4" stroke-width="1" stroke-dasharray="3 3"/></g>';
+  }).join('');
+}
+
+/* ============================================================
+   RENDER
+   ============================================================ */
+function draw(){
+  buildScene();
+  items.sort((a,b)=>a.depth-b.depth);
+  worldEl.innerHTML = items.map(i=>i.html).join('');
+  groundEl.innerHTML = groundItems.join('');
+  camEl.setAttribute('transform','translate('+pan.x.toFixed(1)+' '+pan.y.toFixed(1)+') translate(0 -55) scale('+zoomK.toFixed(3)+') translate(0 55)');
+  placeActors(); placeLabels();
+  rotOut.textContent = Math.round(((rot%360)+360)%360)+'°';
+}
+
+/* ============================================================
+   INTERAKSI
+   ============================================================ */
+let drag=null, last={x:0,y:0}, auto=false, raf=null;
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+
+svg.addEventListener('pointerdown', e=>{
+  svg.setPointerCapture(e.pointerId);
+  drag = (e.shiftKey||e.button===1||e.button===2) ? 'pan' : 'rot';
+  last={x:e.clientX,y:e.clientY}; svg.classList.add('grabbing'); stopAuto();
+});
+window.addEventListener('pointermove', e=>{
+  if(!drag) return;
+  const f = 1440 / svg.clientWidth;
+  const dx=(e.clientX-last.x)*f, dy=(e.clientY-last.y)*f;
+  last={x:e.clientX,y:e.clientY};
+  if(drag==='rot'){ rot = (rot + dx*0.42)%360; }
+  else { pan.x += dx; pan.y += dy; }
+  draw();
+});
+window.addEventListener('pointerup', ()=>{ drag=null; svg.classList.remove('grabbing'); });
+svg.addEventListener('contextmenu', e=>e.preventDefault());
+svg.addEventListener('wheel', e=>{
+  e.preventDefault(); stopAuto();
+  zoomK = clamp(zoomK * Math.exp(-e.deltaY*0.0012), 0.5, 3.4); draw();
+},{passive:false});
+
+function focusPoint(px, py, k){
+  zoomK = k;
+  pan = { x: -k*px, y: -k*py - 55*k };
+  draw();
+}
+let focused = -1;
+function focusPerson(i, mark){
+  const p = people[i], q = proj(p.x, p.y, 0);
+  focusPoint(q.x, q.y+45, 1.9);
+  if(mark){
+    focused = i;
+    peopleEl.querySelectorAll('.person').forEach(b=>b.classList.toggle('active', +b.dataset.i===i));
+    peopleEl.children[i].scrollIntoView({block:'nearest', behavior:'smooth'});
+  }
+  document.querySelectorAll('.actor').forEach(a=>a.classList.remove('focus'));
+  const el = document.getElementById('actor-'+i);
+  if(el) el.classList.add('focus');
+}
+
+document.getElementById('bBoard').addEventListener('click', ()=>{
+  const q = proj(380, 55, 115); focusPoint(q.x, q.y, 1.75); stopAuto();
+});
+document.getElementById('bIn').addEventListener('click', ()=>{ zoomK=clamp(zoomK*1.25,.5,3.4); draw(); });
+document.getElementById('bOut').addEventListener('click', ()=>{ zoomK=clamp(zoomK*0.8,.5,3.4); draw(); });
+document.getElementById('bReset').addEventListener('click', ()=>{
+  stopAuto(); rot=0; zoomK=1; pan={x:0,y:0};
+  document.querySelectorAll('.actor').forEach(a=>a.classList.remove('focus'));
+  focused=-1; peopleEl.querySelectorAll('.person').forEach(b=>b.classList.remove('active'));
+  draw();
+});
+const bAuto=document.getElementById('bAuto');
+function startAuto(){
+  if(auto) return; auto=true; bAuto.classList.add('on');
+  const step=()=>{ if(!auto) return; rot=(rot+0.16)%360; draw(); raf=requestAnimationFrame(step); };
+  raf=requestAnimationFrame(step);
+}
+function stopAuto(){ if(!auto) return; auto=false; bAuto.classList.remove('on'); cancelAnimationFrame(raf); }
+bAuto.addEventListener('click', ()=> auto ? stopAuto() : startAuto());
+window.addEventListener('keydown', e=>{
+  if(e.key==='ArrowLeft'){ rot-=4; draw(); } else if(e.key==='ArrowRight'){ rot+=4; draw(); }
+  else if(e.key==='+'||e.key==='='){ zoomK=clamp(zoomK*1.12,.5,3.4); draw(); }
+  else if(e.key==='-'){ zoomK=clamp(zoomK*0.9,.5,3.4); draw(); }
+});
+
+/* ============================================================
+   START
+   ============================================================ */
+buildSidebar(); buildActors(); labelDefs=[]; draw();
+</script>
+</body>
+</html>

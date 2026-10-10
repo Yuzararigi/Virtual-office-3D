@@ -1,0 +1,383 @@
+/* Kantor Virtual 3D — gaya UI */
+:root {
+  --bg: #f4efe6;
+  --ink: #22303c;
+  --dim: #6b7a88;
+  --card: #fffdf8;
+  --line: #e3d9c6;
+  --accent: #0e7c7b;
+  --accent-ink: #ffffff;
+  --danger: #c0392b;
+  --shadow: 0 10px 30px rgba(34, 48, 60, 0.18);
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; overflow: hidden; }
+body {
+  font-family: "Segoe UI", system-ui, -apple-system, Arial, sans-serif;
+  background: var(--bg); color: var(--ink);
+}
+#scene, #scene canvas { position: fixed; inset: 0; display: block; }
+#scene canvas { cursor: grab; touch-action: none; }
+#scene canvas.orbiting { cursor: grabbing; }
+
+/* ---------- sidebar pengguna ---------- */
+#sidebar {
+  position: fixed; top: 0; left: 0; bottom: 0; width: 210px;
+  background: rgba(24, 30, 40, 0.96); color: #eef2f6;
+  padding: 14px 10px; z-index: 10; overflow-y: auto;
+  box-shadow: 2px 0 16px rgba(0,0,0,0.2);
+}
+#sidebar h2 { margin: 2px 6px 12px; font-size: 13px; letter-spacing: 0.08em; text-transform: uppercase; color: #aeb9c4; }
+#sidebar h2 span { color: #fff; background: rgba(255,255,255,0.12); padding: 2px 7px; border-radius: 10px; font-size: 11px; margin-left: 4px; }
+#userList { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+#userList li {
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px 8px; border-radius: 8px; font-size: 13px;
+  transition: all 0.2s ease;
+  position: relative;
+}
+#userList li:hover { background: rgba(255, 255, 255, 0.07); }
+#userList li.speaking {
+  background: rgba(46, 204, 113, 0.16);
+  box-shadow: 0 0 0 1px rgba(46, 204, 113, 0.4);
+}
+.avatar-dot {
+  width: 28px; height: 28px; border-radius: 50%; flex: none;
+  display: grid; place-items: center; color: #fff;
+  font-size: 12px; font-weight: 700;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+li.speaking .avatar-dot {
+  box-shadow: 0 0 10px #2ecc71;
+  transform: scale(1.05);
+}
+#userList .name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; }
+.online-dot { width: 8px; height: 8px; border-radius: 50%; background: #2ecc71; flex: none; box-shadow: 0 0 6px #2ecc71; }
+
+/* Voice badges in sidebar */
+.voice-badge {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 20px; height: 20px; border-radius: 4px; flex: none;
+  color: #8fa3b3; transition: all 0.2s ease;
+}
+.voice-badge.active { color: #2ecc71; }
+.voice-badge.muted { color: #6b7a88; opacity: 0.6; }
+.voice-badge.speaking {
+  color: #2ecc71;
+  background: rgba(46, 204, 113, 0.2);
+  border-radius: 6px;
+}
+
+/* Equalizer sound bars */
+.voice-bars {
+  display: flex; align-items: flex-end; justify-content: center; gap: 2px;
+  height: 12px; width: 14px;
+}
+.voice-bars .vbar {
+  width: 2.5px; background: #2ecc71; border-radius: 2px;
+  animation: soundBars 0.6s infinite ease-in-out alternate;
+}
+.voice-bars .vbar:nth-child(1) { height: 4px; animation-delay: 0.05s; }
+.voice-bars .vbar:nth-child(2) { height: 12px; animation-delay: 0.2s; }
+.voice-bars .vbar:nth-child(3) { height: 7px; animation-delay: 0.35s; }
+
+@keyframes soundBars {
+  0% { height: 3px; }
+  100% { height: 12px; }
+}
+
+/* ---------- topbar & hint ---------- */
+#topbar { position: fixed; top: 12px; right: 14px; z-index: 10; display: flex; gap: 8px; }
+#topbar button, #kanbanClose {
+  border: 2px solid var(--ink); background: var(--card); color: var(--ink);
+  font-weight: 700; font-size: 13px; padding: 8px 16px; border-radius: 10px;
+  cursor: pointer; box-shadow: 3px 3px 0 rgba(34, 48, 60, 0.25);
+  display: inline-flex; align-items: center; gap: 6px;
+  transition: all 0.15s ease;
+}
+#topbar button:hover, #kanbanClose:hover { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); transform: translateY(-1px); }
+#voiceBtn[aria-pressed="true"] {
+  background: #107048; border-color: #107048; color: #ffffff;
+  box-shadow: 0 0 12px rgba(46, 204, 113, 0.4), 3px 3px 0 rgba(16, 44, 30, 0.3);
+}
+#voiceBtn[aria-pressed="true"]:hover { background: #0c5938; }
+#voiceBtn .btn-icon { width: 16px; height: 16px; display: inline-block; vertical-align: middle; }
+#hint {
+  position: fixed; right: 14px; bottom: 12px; z-index: 10;
+  font-size: 11px; color: var(--dim); background: rgba(255, 253, 248, 0.85);
+  padding: 6px 10px; border-radius: 8px; border: 1px solid var(--line);
+}
+#interactionPrompt {
+  position: fixed; left: 50%; bottom: 54px; transform: translateX(-50%); z-index: 12;
+  max-width: min(90vw, 420px); padding: 9px 14px; border: 1px solid var(--line);
+  border-radius: 8px; background: rgba(255, 253, 248, 0.94); color: var(--ink);
+  font-size: 13px; font-weight: 700; text-align: center; box-shadow: var(--shadow);
+}
+
+/* ---------- chat ---------- */
+#chatPanel {
+  position: fixed; left: 208px; bottom: 12px; width: 330px; z-index: 10;
+  background: rgba(255, 253, 248, 0.94); border: 1px solid var(--line);
+  border-radius: 12px; box-shadow: var(--shadow); overflow: hidden;
+}
+#chatList { list-style: none; margin: 0; padding: 10px 12px; max-height: 170px; overflow-y: auto; font-size: 13px; }
+#chatList li { margin-bottom: 7px; line-height: 1.35; }
+#chatList .who { font-weight: 700; }
+#chatList .ts { color: var(--dim); font-size: 10px; margin-left: 6px; }
+#chatInput {
+  width: 100%; border: 0; border-top: 1px solid var(--line);
+  padding: 10px 12px; font-size: 13px; background: transparent; outline: none; color: var(--ink);
+}
+
+/* ---------- overlay masuk / reconnect ---------- */
+#joinOverlay, #reconnectOverlay {
+  position: fixed; inset: 0; z-index: 40;
+  display: grid; place-items: center; background: rgba(24, 30, 40, 0.55);
+  backdrop-filter: blur(3px);
+}
+.hidden { display: none !important; }
+#joinOverlay .card, #reconnectOverlay .card {
+  background: var(--card); border-radius: 16px; padding: 30px 34px;
+  width: min(380px, 92vw); text-align: center; box-shadow: var(--shadow);
+}
+#joinOverlay h1 { margin: 0 0 8px; font-size: 24px; }
+#joinOverlay p, #reconnectOverlay p { color: var(--dim); font-size: 14px; margin: 0 0 16px; }
+#nameInput {
+  width: 100%; padding: 11px 12px; font-size: 15px; border-radius: 10px;
+  border: 2px solid var(--line); margin-bottom: 12px; outline: none; color: var(--ink);
+}
+#nameInput:focus { border-color: var(--accent); }
+#joinBtn {
+  width: 100%; padding: 11px; font-size: 15px; font-weight: 700;
+  background: var(--accent); color: var(--accent-ink); border: 0;
+  border-radius: 10px; cursor: pointer;
+}
+#joinBtn:hover { filter: brightness(1.08); }
+
+/* ---------- kanban ---------- */
+#kanbanModal {
+  position: fixed; inset: 0; z-index: 30;
+  display: grid; place-items: center; background: rgba(24, 30, 40, 0.55); padding: 18px;
+}
+.kanban {
+  background: var(--card); border-radius: 16px; box-shadow: var(--shadow);
+  width: min(980px, 96vw); max-height: 88vh; display: flex; flex-direction: column; overflow: hidden;
+}
+.kanban-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 20px; border-bottom: 2px solid var(--line);
+}
+.kanban-head h2 { margin: 0; font-size: 18px; }
+.kanban .cols { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; padding: 16px 20px 20px; overflow-y: auto; }
+.kcol { background: #f7f2e7; border: 1px solid var(--line); border-radius: 12px; padding: 10px; display: flex; flex-direction: column; gap: 8px; }
+.kcol > h3 { margin: 2px 4px 4px; font-size: 12px; letter-spacing: 0.08em; color: var(--dim); }
+.kcard {
+  background: #fff; border: 1px solid var(--line); border-left: 5px solid var(--accent);
+  border-radius: 8px; padding: 9px 10px; font-size: 13px;
+}
+.kcard p { margin: 0 0 8px; line-height: 1.35; word-break: break-word; }
+.kcard .ops { display: flex; gap: 6px; }
+.kcard .ops button {
+  border: 1px solid var(--line); background: #fff; border-radius: 6px;
+  font-size: 12px; padding: 4px 9px; cursor: pointer; color: var(--ink);
+}
+.kcard .ops button:hover { background: var(--accent); border-color: var(--accent); color: #fff; }
+.kcard .ops button.del:hover { background: var(--danger); border-color: var(--danger); }
+.kadd { display: flex; gap: 6px; margin-top: 2px; }
+.kadd input {
+  flex: 1; min-width: 0; border: 1px solid var(--line); border-radius: 8px;
+  padding: 8px 10px; font-size: 13px; outline: none; color: var(--ink);
+}
+.kadd input:focus { border-color: var(--accent); }
+.kadd button {
+  border: 0; background: var(--accent); color: #fff; border-radius: 8px;
+  font-size: 13px; font-weight: 700; padding: 0 14px; cursor: pointer;
+}
+.kempty { color: var(--dim); font-size: 12px; text-align: center; padding: 10px 0; }
+
+/* ---------- toast ---------- */
+#toasts { position: fixed; top: 14px; left: 50%; transform: translateX(-50%); z-index: 50; display: grid; gap: 8px; }
+.toast {
+  background: rgba(24, 30, 40, 0.92); color: #fff; font-size: 13px;
+  padding: 9px 16px; border-radius: 20px; box-shadow: var(--shadow);
+  animation: toast-in 0.25s ease-out;
+}
+@keyframes toast-in { from { opacity: 0; transform: translateY(-8px); } }
+
+/* ---------- mode edit & admin ---------- */
+#editBtn[data-active="true"] {
+  background: #d35400; border-color: #d35400; color: #fff;
+  box-shadow: 0 0 14px rgba(211, 84, 0, 0.5), 3px 3px 0 rgba(0,0,0,0.25);
+}
+
+#editorBar {
+  position: fixed; top: 64px; left: 50%; transform: translateX(-50%);
+  background: rgba(24, 30, 40, 0.94); color: #fff;
+  padding: 10px 18px; border-radius: 14px; box-shadow: var(--shadow);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(8px);
+  z-index: 25; display: flex; flex-direction: column; gap: 8px;
+  max-width: min(92vw, 680px); animation: toast-in 0.2s ease-out;
+}
+.editor-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 12px; }
+.editor-badge {
+  background: #d35400; color: #fff; font-weight: 700;
+  padding: 3px 8px; border-radius: 6px; letter-spacing: 0.05em;
+}
+.selected-label { color: #aeb9c4; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.editor-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+.editor-actions button, .modal-buttons button {
+  padding: 7px 13px; font-size: 12px; font-weight: 700;
+  border-radius: 8px; border: 0; cursor: pointer;
+  transition: all 0.15s ease;
+}
+.editor-actions button:disabled { opacity: 0.4; cursor: not-allowed; filter: grayscale(1); }
+.btn-primary { background: #0e7c7b; color: #fff; }
+.btn-primary:hover:not(:disabled) { background: #119997; transform: translateY(-1px); }
+.btn-danger { background: #c0392b; color: #fff; }
+.btn-danger:hover:not(:disabled) { background: #e74c3c; transform: translateY(-1px); }
+.btn-outline { background: rgba(255,255,255,0.12); color: #fff; border: 1px solid rgba(255,255,255,0.2) !important; }
+.btn-outline:hover:not(:disabled) { background: rgba(255,255,255,0.22); }
+.btn-success { background: #27ae60; color: #fff; }
+.btn-success:hover:not(:disabled) { background: #2ecc71; transform: translateY(-1px); }
+
+/* Modal Admin & Buttons */
+#adminModal {
+  position: fixed; inset: 0; z-index: 45;
+  display: grid; place-items: center; background: rgba(24, 30, 40, 0.6);
+  backdrop-filter: blur(4px);
+}
+.modal-buttons { display: flex; gap: 8px; margin-top: 14px; }
+.modal-buttons button { flex: 1; padding: 10px; font-size: 14px; }
+
+/* Modal Katalog Furnitur */
+#catalogModal {
+  position: fixed; inset: 0; z-index: 42;
+  display: grid; place-items: center; background: rgba(24, 30, 40, 0.6);
+  backdrop-filter: blur(4px); padding: 16px;
+}
+.catalog-box {
+  background: var(--card); border-radius: 16px; box-shadow: var(--shadow);
+  width: min(840px, 94vw); max-height: 82vh; display: flex; flex-direction: column;
+  overflow: hidden;
+}
+.catalog-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 20px; border-bottom: 2px solid var(--line);
+}
+.catalog-header h2 { margin: 0; font-size: 18px; }
+.catalog-header button {
+  border: 1px solid var(--line); background: #fff; border-radius: 8px;
+  padding: 6px 14px; font-weight: 700; cursor: pointer;
+}
+.catalog-content { padding: 16px 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 16px; }
+.catalog-section h3 { margin: 0 0 10px; font-size: 13px; color: var(--dim); letter-spacing: 0.05em; text-transform: uppercase; }
+.catalog-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; }
+.catalog-card {
+  background: #fff; border: 2px solid var(--line); border-radius: 10px;
+  padding: 12px 8px; text-align: center; cursor: pointer;
+  transition: all 0.15s ease; display: flex; flex-direction: column; align-items: center; gap: 6px;
+}
+.catalog-card:hover { border-color: var(--accent); transform: translateY(-2px); box-shadow: 0 4px 12px rgba(14, 124, 123, 0.18); }
+.catalog-card .cat-icon { font-size: 26px; }
+.catalog-card .cat-name { font-size: 12px; font-weight: 700; color: var(--ink); }
+
+/* Tombol Kick User (Khusus Admin di sidebar) */
+.kick-user-btn {
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  font-size: 13px;
+  padding: 2px 4px;
+  border-radius: 4px;
+  opacity: 0.65;
+  transition: all 0.15s ease;
+  line-height: 1;
+}
+.kick-user-btn:hover {
+  opacity: 1;
+  background: rgba(192, 57, 43, 0.2);
+  transform: scale(1.15);
+}
+
+/* ---------- admin panel toggle ---------- */
+#adminPanelToggle { display: none; }
+body.is-admin #adminPanelToggle { display: inline-flex; }
+
+/* ---------- Admin Control Panel ---------- */
+#adminControlPanel {
+  position: fixed; top: 64px; right: 14px;
+  background: rgba(24, 30, 40, 0.95);
+  color: #fff; padding: 12px 16px; border-radius: 14px;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.35), 0 0 0 1px rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.12);
+  backdrop-filter: blur(10px);
+  z-index: 26; width: min(92vw, 260px);
+  animation: toast-in 0.2s ease-out;
+}
+.admin-panel-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 10px; gap: 8px;
+}
+.admin-panel-badge {
+  background: linear-gradient(135deg, #d35400, #e67e22);
+  color: #fff; font-weight: 700; font-size: 11px;
+  padding: 4px 10px; border-radius: 6px;
+  letter-spacing: 0.06em;
+  box-shadow: 0 2px 8px rgba(211, 84, 0, 0.35);
+}
+.admin-panel-close {
+  background: rgba(255,255,255,0.1); border: 0; color: #aeb9c4;
+  font-size: 16px; cursor: pointer; border-radius: 6px;
+  width: 28px; height: 28px; display: grid; place-items: center;
+  transition: all 0.15s ease;
+}
+.admin-panel-close:hover { background: rgba(255,255,255,0.2); color: #fff; }
+
+.admin-panel-actions {
+  display: flex; flex-direction: column; gap: 6px;
+}
+.admin-ctrl-btn {
+  display: flex; align-items: center; gap: 8px;
+  width: 100%; padding: 10px 14px; font-size: 13px; font-weight: 600;
+  border-radius: 10px; border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(255,255,255,0.06); color: #e8ecf0;
+  cursor: pointer; transition: all 0.18s ease;
+  text-align: left;
+}
+.admin-ctrl-btn:hover {
+  background: rgba(255,255,255,0.14);
+  border-color: rgba(255,255,255,0.25);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+.admin-ctrl-btn.btn-danger {
+  border-color: rgba(192, 57, 43, 0.3);
+  color: #f5b7b1;
+}
+.admin-ctrl-btn.btn-danger:hover {
+  background: rgba(192, 57, 43, 0.25);
+  border-color: rgba(192, 57, 43, 0.5);
+  color: #fadbd8;
+}
+.admin-ctrl-btn.btn-active {
+  background: rgba(14, 124, 123, 0.3);
+  border-color: rgba(14, 124, 123, 0.5);
+  color: #a3e4d7;
+  box-shadow: 0 0 10px rgba(14, 124, 123, 0.2);
+}
+.admin-ctrl-btn.btn-active:hover {
+  background: rgba(14, 124, 123, 0.4);
+}
+
+@media (max-width: 760px) {
+  #sidebar { width: 150px; }
+  #topbar { left: 158px; right: 8px; display: grid; grid-template-columns: 1fr; }
+  #topbar button { width: 100%; }
+  #hint { left: 158px; right: 8px; bottom: 240px; text-align: right; }
+  #chatPanel { left: 160px; width: calc(100vw - 174px); }
+  .kanban .cols { grid-template-columns: 1fr; }
+  #editorBar { width: calc(100vw - 174px); left: auto; right: 8px; transform: none; top: auto; bottom: 64px; }
+  #adminControlPanel { right: 8px; width: calc(100vw - 174px); }
+}

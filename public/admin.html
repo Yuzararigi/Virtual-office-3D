@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Undangan Kantor</title>
+<style>
+  :root {
+    --bg: #f4efe6; --ink: #22303c; --dim: #6b7a88; --card: #fffdf8; --line: #e3d9c6;
+    --accent: #0e7c7b; --accent-ink: #fff; --danger: #c0392b; --ok: #1e8e5a;
+    --shadow: 0 10px 30px rgba(34, 48, 60, 0.12);
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+    font-family: "Segoe UI", system-ui, -apple-system, Arial, sans-serif; font-size: 15px; }
+  main { max-width: 920px; margin: 0 auto; padding: 28px 16px 60px; }
+  h1 { margin: 0 0 4px; font-size: 24px; }
+  .sub { color: var(--dim); margin: 0 0 22px; }
+  .kartu { background: var(--card); border: 1px solid var(--line); border-radius: 14px;
+    padding: 18px 20px; margin-bottom: 18px; box-shadow: var(--shadow); }
+  .kartu h2 { margin: 0 0 12px; font-size: 16px; }
+  label { display: block; font-size: 13px; color: var(--dim); margin-bottom: 4px; }
+  input, select { width: 100%; padding: 10px 11px; font-size: 15px; border-radius: 9px;
+    border: 2px solid var(--line); background: #fff; color: var(--ink); outline: none; }
+  input:focus, select:focus { border-color: var(--accent); }
+  .baris { display: flex; gap: 12px; align-items: end; flex-wrap: wrap; }
+  .baris > div { flex: 1 1 200px; }
+  button, .tombol { padding: 10px 16px; font-size: 14px; font-weight: 700; border-radius: 9px;
+    border: 0; background: var(--accent); color: var(--accent-ink); cursor: pointer; text-decoration: none;
+    display: inline-block; white-space: nowrap; }
+  button:hover, .tombol:hover { filter: brightness(1.08); }
+  button.sekunder { background: transparent; color: var(--ink); border: 1.5px solid var(--line); font-weight: 600; padding: 7px 11px; }
+  button.bahaya { background: transparent; color: var(--danger); border: 1.5px solid var(--line); font-weight: 600; padding: 7px 11px; }
+  table { width: 100%; border-collapse: collapse; }
+  th, td { text-align: left; padding: 10px 8px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+  th { font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: var(--dim); font-weight: 700; }
+  td.aksi { white-space: nowrap; text-align: right; }
+  td.aksi button { margin-left: 4px; }
+  .lencana { font-size: 12px; font-weight: 700; padding: 3px 8px; border-radius: 20px; }
+  .aktif { background: rgba(30,142,90,.12); color: var(--ok); }
+  .dicabut, .kedaluwarsa { background: rgba(107,122,136,.14); color: var(--dim); }
+  .titik { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--ok); margin-left: 6px; }
+  .kecil { font-size: 13px; color: var(--dim); }
+  .pesan { margin: 10px 0 0; font-size: 14px; min-height: 1em; }
+  .pesan.galat { color: var(--danger); }
+  .pesan.ok { color: var(--ok); }
+  .kosong { color: var(--dim); text-align: center; padding: 22px 8px; }
+  .hidden { display: none !important; }
+  .linkbaru { margin-top: 12px; padding: 12px; border-radius: 10px; background: rgba(14,124,123,.08); }
+  .linkbaru input { font-family: ui-monospace, Menlo, monospace; font-size: 13px; }
+  @media (max-width: 640px) {
+    th:nth-child(3), td:nth-child(3), th:nth-child(4), td:nth-child(4) { display: none; }
+    td.aksi { white-space: normal; }
+  }
+</style>
+</head>
+<body>
+<main>
+  <h1>Undangan Kantor Virtual</h1>
+  <p class="sub">Hanya pemegang link undangan yang bisa masuk. Nama tamu terkunci sesuai undangan.</p>
+
+  <section class="kartu" id="kotakLogin">
+    <h2>Kode admin</h2>
+    <div class="baris">
+      <div><label for="kodeAdmin">Ada di Log proyek (dashboard → Proyek lokal → Log) atau file data/undangan.json</label>
+        <input id="kodeAdmin" type="password" autocomplete="off"></div>
+      <button id="btnLogin" type="button">Buka</button>
+    </div>
+    <p class="pesan" id="pesanLogin"></p>
+  </section>
+
+  <div id="isi" class="hidden">
+    <section class="kartu">
+      <h2>Buat undangan</h2>
+      <div class="baris">
+        <div><label for="nama">Nama tamu</label><input id="nama" maxlength="20" placeholder="mis. Budi Santoso" autocomplete="off"></div>
+        <div style="flex:0 1 170px"><label for="hari">Berlaku</label>
+          <select id="hari">
+            <option value="1">1 hari</option>
+            <option value="7" selected>7 hari</option>
+            <option value="30">30 hari</option>
+            <option value="0">Tanpa batas</option>
+          </select></div>
+        <button id="btnBuat" type="button">Buat undangan</button>
+      </div>
+      <div style="margin-top:12px">
+        <label for="alamat">Alamat kantor untuk tamu (dipakai di link)</label>
+        <input id="alamat" autocomplete="off">
+        <p class="kecil" style="margin:6px 0 0">Tamu satu Wi-Fi: <code>http://IP-Mac-Anda:8095</code>. Tamu dari luar: alamat Tailscale / Cloudflare Tunnel. <code>127.0.0.1</code> hanya bisa dibuka dari laptop ini.</p>
+      </div>
+      <div id="linkBaru" class="linkbaru hidden">
+        <label for="linkBaruIsi">Link untuk <b id="linkBaruNama"></b> — kirim lewat WhatsApp/email</label>
+        <div class="baris"><div><input id="linkBaruIsi" readonly></div><button id="btnSalinBaru" type="button">Salin</button></div>
+      </div>
+      <p class="pesan" id="pesanBuat"></p>
+    </section>
+
+    <section class="kartu">
+      <div class="baris" style="justify-content:space-between;align-items:center;margin-bottom:6px">
+        <h2 style="margin:0">Daftar undangan</h2>
+        <a class="tombol" id="masukAdmin" href="/" target="_blank" rel="noopener">Masuk kantor sebagai admin</a>
+      </div>
+      <table>
+        <thead><tr><th>Nama</th><th>Status</th><th>Berlaku sampai</th><th>Terakhir masuk</th><th></th></tr></thead>
+        <tbody id="tabel"></tbody>
+      </table>
+      <p class="pesan" id="pesanDaftar"></p>
+    </section>
+  </div>
+</main>
+
+<script>
+const $ = (id) => document.getElementById(id);
+let kode = '';
+const simpan = (k, v) => { try { v ? localStorage.setItem(k, v) : localStorage.removeItem(k); } catch {} };
+const baca = (k) => { try { return localStorage.getItem(k) || ''; } catch { return ''; } };
+
+function tgl(ms) {
+  if (!ms) return '—';
+  return new Date(ms).toLocaleString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+}
+function alamat() { return ($('alamat').value.trim() || location.origin).replace(/\/+$/, ''); }
+function linkUntuk(k) { return `${alamat()}/?undangan=${encodeURIComponent(k)}`; }
+function pesan(el, teks, galat) { el.textContent = teks || ''; el.className = 'pesan' + (teks ? (galat ? ' galat' : ' ok') : ''); }
+
+async function salin(teks, input) {
+  try { await navigator.clipboard.writeText(teks); return true; } catch {}
+  // http biasa (bukan localhost) tidak boleh pakai clipboard API: pakai cara lama.
+  const el = input || Object.assign(document.createElement('textarea'), { value: teks });
+  if (!input) document.body.appendChild(el);
+  el.select();
+  let ok = false;
+  try { ok = document.execCommand('copy'); } catch {}
+  if (!input) el.remove();
+  return ok;
+}
+
+async function api(path, body) {
+  const r = await fetch(path, {
+    method: body ? 'POST' : 'GET',
+    headers: { 'x-kode-admin': kode, ...(body ? { 'Content-Type': 'application/json' } : {}) },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok) throw Object.assign(new Error(data.error || `Galat ${r.status}`), { status: r.status });
+  return data;
+}
+
+async function muat() {
+  let data;
+  try { data = await api('/api/undangan'); }
+  catch (e) {
+    if (e.status === 401 || e.status === 429) { keluar(e.message); return; }
+    pesan($('pesanDaftar'), e.message, true); return;
+  }
+  $('kotakLogin').classList.add('hidden');
+  $('isi').classList.remove('hidden');
+  $('masukAdmin').href = `/?undangan=${encodeURIComponent(kode)}`;
+  pesan($('pesanDaftar'), data.wajib ? '' : 'Catatan: WAJIB_UNDANGAN=0 — saat ini siapa pun bisa masuk tanpa undangan.', true);
+  const tb = $('tabel');
+  tb.textContent = '';
+  const urut = [...data.daftar].sort((a, b) => (a.status === 'aktif' ? 0 : 1) - (b.status === 'aktif' ? 0 : 1) || b.dibuat - a.dibuat);
+  if (!urut.length) {
+    const tr = tb.insertRow(); const td = tr.insertCell(); td.colSpan = 5; td.className = 'kosong';
+    td.textContent = 'Belum ada undangan. Buat yang pertama di atas.';
+  }
+  for (const u of urut) {
+    const tr = tb.insertRow();
+    const nm = tr.insertCell(); nm.textContent = u.nama;
+    if (u.online) { const d = document.createElement('span'); d.className = 'titik'; d.title = 'Sedang di kantor'; nm.appendChild(d); }
+    const st = tr.insertCell(); const l = document.createElement('span');
+    l.className = `lencana ${u.status}`; l.textContent = u.status; st.appendChild(l);
+    tr.insertCell().textContent = u.berlaku_sampai ? tgl(u.berlaku_sampai) : 'Tanpa batas';
+    tr.insertCell().textContent = tgl(u.terakhir_masuk);
+    const ak = tr.insertCell(); ak.className = 'aksi';
+    if (u.status === 'aktif') {
+      const bs = Object.assign(document.createElement('button'), { className: 'sekunder', type: 'button', textContent: 'Salin link' });
+      bs.onclick = async () => { bs.textContent = (await salin(linkUntuk(u.kode))) ? 'Tersalin ✓' : 'Gagal'; setTimeout(() => (bs.textContent = 'Salin link'), 1600); };
+      const bc = Object.assign(document.createElement('button'), { className: 'bahaya', type: 'button', textContent: 'Cabut' });
+      bc.onclick = () => aksi('/api/undangan/cabut', u, `Cabut undangan ${u.nama}? Bila sedang di kantor, ia langsung dikeluarkan.`);
+      ak.append(bs, bc);
+    } else {
+      const bh = Object.assign(document.createElement('button'), { className: 'bahaya', type: 'button', textContent: 'Hapus' });
+      bh.onclick = () => aksi('/api/undangan/hapus', u, `Hapus undangan ${u.nama} dari daftar?`);
+      ak.append(bh);
+    }
+  }
+}
+
+async function aksi(path, u, tanya) {
+  if (!confirm(tanya)) return;
+  try { await api(path, { kode: u.kode }); await muat(); }
+  catch (e) { pesan($('pesanDaftar'), e.message, true); }
+}
+
+function keluar(teks) {
+  kode = ''; simpan('vo_admin', '');
+  $('isi').classList.add('hidden');
+  $('kotakLogin').classList.remove('hidden');
+  pesan($('pesanLogin'), teks, true);
+}
+
+$('btnLogin').onclick = () => { kode = $('kodeAdmin').value.trim(); simpan('vo_admin', kode); pesan($('pesanLogin'), ''); muat(); };
+$('kodeAdmin').addEventListener('keydown', (e) => { if (e.key === 'Enter') $('btnLogin').click(); });
+
+$('btnBuat').onclick = async () => {
+  const nama = $('nama').value.trim();
+  if (!nama) { pesan($('pesanBuat'), 'Isi nama tamu dulu.', true); return; }
+  try {
+    const { undangan: u } = await api('/api/undangan', { nama, hari: Number($('hari').value) });
+    $('nama').value = '';
+    $('linkBaruNama').textContent = u.nama;
+    $('linkBaruIsi').value = linkUntuk(u.kode);
+    $('linkBaru').classList.remove('hidden');
+    pesan($('pesanBuat'), (await salin($('linkBaruIsi').value, $('linkBaruIsi'))) ? 'Undangan dibuat dan link sudah tersalin.' : 'Undangan dibuat. Salin link di atas.');
+    await muat();
+  } catch (e) { pesan($('pesanBuat'), e.message, true); }
+};
+$('nama').addEventListener('keydown', (e) => { if (e.key === 'Enter') $('btnBuat').click(); });
+$('btnSalinBaru').onclick = async () => { $('btnSalinBaru').textContent = (await salin($('linkBaruIsi').value, $('linkBaruIsi'))) ? 'Tersalin ✓' : 'Gagal'; setTimeout(() => ($('btnSalinBaru').textContent = 'Salin'), 1600); };
+
+$('alamat').value = baca('vo_alamat') || location.origin;
+$('alamat').addEventListener('change', () => { simpan('vo_alamat', $('alamat').value.trim()); muat(); });
+
+// Kode admin bisa datang dari link log (#kode=...): simpan lalu hapus dari alamat.
+const m = location.hash.match(/kode=([^&]+)/);
+if (m) { kode = decodeURIComponent(m[1]); simpan('vo_admin', kode); history.replaceState(null, '', location.pathname); }
+else kode = baca('vo_admin');
+if (kode) muat();
+setInterval(() => { if (kode && !document.hidden) muat(); }, 10000);
+</script>
+</body>
+</html>
